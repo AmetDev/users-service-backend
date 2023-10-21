@@ -3,9 +3,10 @@ const jwt = require("jsonwebtoken");
 const { pool } = require("./db.js");
 const { validationResult } = require("express-validator");
 const secret = "AWS245V";
-const generateAccessToken = (id) => {
+const generateAccessToken = (nickname, date_of_birth) => {
   const payload = {
-    id,
+    nickname,
+    date_of_birth,
   };
   return jwt.sign(payload, secret, { expiresIn: "24h" });
 };
@@ -27,14 +28,15 @@ class authController {
         "SELECT nickname FROM users WHERE nickname=$1",
         [nickname],
       );
-     const isRow =  canditator.rows.length === 0?  "": canditator.rows[0].nickname  
+      const isRow = canditator.rows.length === 0
+        ? ""
+        : canditator.rows[0].nickname;
       if (isRow === nickname) {
         res.json({
-          "message":
+          message:
             "Пользователь с таким никнеймом уже существет. Попробуйте еще раз.",
         });
-      }
-      else {
+      } else {
         try {
           console.log(
             name,
@@ -48,7 +50,9 @@ class authController {
             `INSERT INTO users (name, lastname, fathername, date_of_birth, nickname, password) VALUES($1, $2, $3, $4, $5, $6)`,
             [name, lastname, fathername, date_of_birth, nickname, hashPassword],
           );
-          res.send(result);
+
+          const token = generateAccessToken(nickname, date_of_birth);
+          res.json({ token });
         } catch (e) {
           res.send(e);
           console.log("inner catch", e);
@@ -57,6 +61,25 @@ class authController {
     } catch (e) {
       console.log(e);
       res.status(400).json({ message: "registration error" });
+    }
+  }
+  async login(req, res) {
+    const { nickname, password, date_of_birth } = req.body;
+    const user = await pool.query(
+      "SELECT nickname, password FROM users WHERE nickname=$1",
+      [nickname],
+    );
+    const isValidPassword = bcrypt.compareSync(password, user.rows[0].password);
+    if (!isValidPassword) {
+      return res.status(401).send({ auth: false, token: null });
+    }
+    if (nickname == user.rows[0].nickname && isValidPassword) {
+      const token = generateAccessToken(nickname, date_of_birth);
+      res.json({ token });
+      console.log(user);
+    } else {
+      res.send(false);
+      console.log(false);
     }
   }
 }
