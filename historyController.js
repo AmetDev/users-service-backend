@@ -1,21 +1,6 @@
 const { pool } = require('./db')
 
 class HistoryController {
-	constructor(idUser) {
-		this.idUser = idUser
-	}
-	async getId(req, res) {
-		try {
-			const { nickname } = req.body
-			console.log('NICKNAME', nickname)
-			idUser = await pool.query('select id from users where nickname = $1', [
-				nickname,
-			])
-		} catch (error) {
-			res.status(200).json(error)
-		}
-		next()
-	}
 	async createHistory(req, res) {
 		try {
 			const resi = await pool.query(

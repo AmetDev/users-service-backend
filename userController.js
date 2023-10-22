@@ -51,7 +51,8 @@ class authController {
 						fathername,
 						date_of_birth,
 						nickname,
-						password
+						password,
+						admin
 					)
 					const result = await pool.query(
 						`INSERT INTO users ( name, lastname, fathername, date_of_birth, nickname, password, admin) VALUES($1, $2, $3, $4, $5, $6, $7)`,
@@ -65,6 +66,8 @@ class authController {
 							admin,
 						]
 					)
+					const token = generateAccessToken(nickname, date_of_birth, admin)
+					res.json({ token })
 					let idUser
 					try {
 						const { nickname } = req.body
@@ -76,12 +79,17 @@ class authController {
 					} catch (error) {
 						res.status(200).json(error)
 					}
+					var currentDate = new Date()
+					var day = ('0' + currentDate.getDate()).slice(-2)
+					var month = ('0' + (currentDate.getMonth() + 1)).slice(-2)
+					var year = currentDate.getFullYear()
+
+					var formattedDate = day + '-' + month + '-' + year
+					console.log(formattedDate)
 					await pool.query(
 						'INSERT INTO history_users (user_id, type_activity, date_activity, nickname) VALUES($1, $2, $3, $4)',
-						[idUser.rows[0].id, 'registration', '22-10-2023', nickname]
+						[idUser.rows[0].id, 'registration', formattedDate, nickname]
 					)
-					const token = generateAccessToken(nickname, date_of_birth, admin)
-					res.json({ token })
 				} catch (e) {
 					res.send(e)
 					console.log('inner catch', e)
@@ -94,11 +102,19 @@ class authController {
 	}
 	async login(req, res) {
 		let idUser
-		const { nickname, password, date_of_birth, admin } = req.body
+		const { nickname, password } = req.body
 		const user = await pool.query(
-			'SELECT nickname, password FROM users WHERE nickname=$1',
+			'SELECT nickname, admin, date_of_birth, password FROM users WHERE nickname=$1',
 			[nickname]
 		)
+		console.log(user.rows[0].admin)
+		console.log(user.rows[0].date_of_birth)
+		const token = generateAccessToken(
+			nickname,
+			user.rows[0].date_of_birth,
+			user.rows[0].admin
+		)
+		res.json({ token })
 		const isValidPassword = bcrypt.compareSync(password, user.rows[0].password)
 		if (!isValidPassword) {
 			return res.status(401).send({ auth: false, token: null })
@@ -113,12 +129,18 @@ class authController {
 			} catch (error) {
 				res.status(200).json(error)
 			}
+			var currentDate = new Date()
+			var day = ('0' + currentDate.getDate()).slice(-2)
+			var month = ('0' + (currentDate.getMonth() + 1)).slice(-2)
+			var year = currentDate.getFullYear()
+
+			var formattedDate = day + '-' + month + '-' + year
+			console.log(formattedDate)
 			await pool.query(
 				'INSERT INTO history_users (user_id, type_activity, date_activity, nickname) VALUES($1, $2, $3, $4)',
-				[idUser.rows[0].id, 'login', '22-10-2022', nickname]
+				[idUser.rows[0].id, 'login', formattedDate, nickname]
 			)
-			const token = generateAccessToken(nickname, date_of_birth, admin)
-			res.json({ token })
+
 			console.log(user)
 		} else {
 			res.send(false)
@@ -153,9 +175,16 @@ class authController {
 				} catch (error) {
 					res.status(200).json(error)
 				}
+				var currentDate = new Date()
+				var day = ('0' + currentDate.getDate()).slice(-2)
+				var month = ('0' + (currentDate.getMonth() + 1)).slice(-2)
+				var year = currentDate.getFullYear()
+
+				var formattedDate = day + '-' + month + '-' + year
+				console.log(formattedDate)
 				await pool.query(
 					'INSERT INTO history_users (user_id, type_activity, date_activity, nickname) VALUES($1, $2, $3, $4)',
-					[idUser.rows[0].id, 'putUser', '22-10-2021', nickname]
+					[idUser.rows[0].id, 'putUser', formattedDate, nickname]
 				)
 				const updateValues = Object.entries(user)
 					.map(([key, value]) => `${key} = '${value}'`)
