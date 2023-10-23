@@ -157,27 +157,28 @@ class authController {
 						'select id from users where nickname = $1',
 						[nickname]
 					)
+					var currentDate = new Date()
+					var day = ('0' + currentDate.getDate()).slice(-2)
+					var month = ('0' + (currentDate.getMonth() + 1)).slice(-2)
+					var year = currentDate.getFullYear()
+	
+					var formattedDate = day + '-' + month + '-' + year
+					
+					await pool.query(
+						'INSERT INTO history_users (user_id, type_activity, date_activiy, nickname) VALUES($1, $2, $3, $4)',
+						[idUser.rows[0].id, 'putUser', formattedDate, nickname]
+					)
+					const updateValues = Object.entries(user)
+						.map(([key, value]) => `${key} = '${value}'`)
+						.join(', ')
+					await pool.query(
+						`UPDATE users SET ${updateValues} WHERE nickname = '${nickname}'`
+					)
+					res.send('good')
 				} catch (error) {
-					res.status(200).json(error)
+					console.log(error)
 				}
-				var currentDate = new Date()
-				var day = ('0' + currentDate.getDate()).slice(-2)
-				var month = ('0' + (currentDate.getMonth() + 1)).slice(-2)
-				var year = currentDate.getFullYear()
-
-				var formattedDate = day + '-' + month + '-' + year
-				console.log(formattedDate)
-				await pool.query(
-					'INSERT INTO history_users (user_id, type_activity, date_activity, nickname) VALUES($1, $2, $3, $4)',
-					[idUser.rows[0].id, 'putUser', formattedDate, nickname]
-				)
-				const updateValues = Object.entries(user)
-					.map(([key, value]) => `${key} = '${value}'`)
-					.join(', ')
-				await pool.query(
-					`UPDATE users SET ${updateValues} WHERE nickname = '${nickname}'`
-				)
-				res.send('good')
+			
 			} else {
 				res.status(200).send({ message: 'Введите никнейм' })
 			}
