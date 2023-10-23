@@ -36,6 +36,7 @@ class authController {
 				'SELECT nickname FROM users WHERE nickname=$1',
 				[nickname]
 			)
+			
 			const isRow =
 				canditator.rows.length === 0 ? '' : canditator.rows[0].nickname
 			if (isRow === nickname) {
@@ -45,16 +46,7 @@ class authController {
 				})
 			} else {
 				try {
-					console.log(
-						name,
-						lastname,
-						fathername,
-						date_of_birth,
-						nickname,
-						password,
-						admin
-					)
-					const result = await pool.query(
+						const result = await pool.query(
 						`INSERT INTO users ( name, lastname, fathername, date_of_birth, nickname, password, admin) VALUES($1, $2, $3, $4, $5, $6, $7)`,
 						[
 							name,
@@ -65,31 +57,27 @@ class authController {
 							hashPassword,
 							admin,
 						]
+					
 					)
-					const token = generateAccessToken(nickname, date_of_birth, admin)
-					res.json({ token })
-					let idUser
-					try {
-						const { nickname } = req.body
-						console.log('NICKNAME', nickname)
-						idUser = await pool.query(
-							'select id from users where nickname = $1',
-							[nickname]
-						)
-					} catch (error) {
-						res.status(200).json(error)
-					}
 					var currentDate = new Date()
 					var day = ('0' + currentDate.getDate()).slice(-2)
 					var month = ('0' + (currentDate.getMonth() + 1)).slice(-2)
 					var year = currentDate.getFullYear()
 
 					var formattedDate = day + '-' + month + '-' + year
-					console.log(formattedDate)
-					await pool.query(
-						'INSERT INTO history_users (user_id, type_activity, date_activity, nickname) VALUES($1, $2, $3, $4)',
-						[idUser.rows[0].id, 'registration', formattedDate, nickname]
-					)
+					let idUser = await pool.query('select id from users where nickname = $1', [nickname])
+					const resi = await pool.query(
+						  'INSERT INTO history_users (user_id, type_activity, date_activiy, nickname) VALUES($1, $2, $3, $4)',
+						  [idUser.rows[0].id, 'registration', formattedDate, nickname])
+					console.log(resi)
+					const token = generateAccessToken(nickname, date_of_birth, admin)
+				
+					res.json({ token })
+						
+					console.log('NICKNAME', nickname)
+					
+					
+					
 				} catch (e) {
 					res.send(e)
 					console.log('inner catch', e)
@@ -99,47 +87,44 @@ class authController {
 			console.log(e)
 			res.status(400).json({ message: 'registration error' })
 		}
+	
 	}
 	async login(req, res) {
-		let idUser
 		const { nickname, password } = req.body
 		const user = await pool.query(
 			'SELECT nickname, admin, date_of_birth, password FROM users WHERE nickname=$1',
 			[nickname]
 		)
-		console.log(user.rows[0].admin)
-		console.log(user.rows[0].date_of_birth)
-		const token = generateAccessToken(
-			nickname,
-			user.rows[0].date_of_birth,
-			user.rows[0].admin
-		)
-		res.json({ token })
 		const isValidPassword = bcrypt.compareSync(password, user.rows[0].password)
 		if (!isValidPassword) {
 			return res.status(401).send({ auth: false, token: null })
 		}
 		if (nickname == user.rows[0].nickname && isValidPassword) {
 			try {
-				const { nickname } = req.body
-				console.log('NICKNAME', nickname)
-				idUser = await pool.query('select id from users where nickname = $1', [
-					nickname,
-				])
+					var currentDate = new Date()
+					var day = ('0' + currentDate.getDate()).slice(-2)
+					var month = ('0' + (currentDate.getMonth() + 1)).slice(-2)
+					var year = currentDate.getFullYear()
+
+					var formattedDate = day + '-' + month + '-' + year
+					let idUser = await pool.query('select id from users where nickname = $1', [nickname])
+					const resi = await pool.query(
+						  'INSERT INTO history_users (user_id, type_activity, date_activiy, nickname) VALUES($1, $2, $3, $4)',
+						  [idUser.rows[0].id, 'login', formattedDate, nickname])
+					console.log(resi)
+					const token = generateAccessToken(nickname,
+						user.rows[0].date_of_birth,
+						user.rows[0].admin)
+				
+					res.json({ token })
+						
+				
+			
+				
 			} catch (error) {
 				res.status(200).json(error)
 			}
-			var currentDate = new Date()
-			var day = ('0' + currentDate.getDate()).slice(-2)
-			var month = ('0' + (currentDate.getMonth() + 1)).slice(-2)
-			var year = currentDate.getFullYear()
-
-			var formattedDate = day + '-' + month + '-' + year
-			console.log(formattedDate)
-			await pool.query(
-				'INSERT INTO history_users (user_id, type_activity, date_activity, nickname) VALUES($1, $2, $3, $4)',
-				[idUser.rows[0].id, 'login', formattedDate, nickname]
-			)
+		
 
 			console.log(user)
 		} else {

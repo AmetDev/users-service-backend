@@ -2,18 +2,26 @@ const { pool } = require('./db')
 
 class HistoryController {
 	async createHistory(req, res) {
+		console.log('1')
+		const { nickname } = req.body
+	  
 		try {
-			const resi = await pool.query(
-				'INSERT INTO history_users (user_id, type_activity, date_activity, nickname) VALUES($1, $2, $3, $4)',
-				[idUser.rows[0].id, 'registration', '22-10-2023', nickname]
-			)
-			console.log(resi)
-			res.send({ message: 'historyusers' })
+		  let idUser = await pool.query('select id from users where nickname = $1', [nickname])
+	  
+		  console.log('2')
+	  
+		  const resi = await pool.query(
+			'INSERT INTO history_users (user_id, type_activity, date_activity, nickname) VALUES($1, $2, $3, $4)',
+			[idUser.rows[0].id, 'registration', '22-10-2023', nickname]
+		  )
+	  
+		  console.log(resi)
+	  
+		  res.send({ message: 'historyusers' })
 		} catch (e) {
-			res.status(500).send(e)
+		  res.status(500).send(e)
 		}
-		next()
-	}
+	  }
 	async getOneHistory(req, res) {
 		const { nickname, id } = req.body
 		try {
