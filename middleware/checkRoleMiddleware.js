@@ -12,8 +12,8 @@ module.exports = function (roles) {
 				return res.status(403).json({ message: 'Пользователь не авторизован' })
 			}
 			const { admin } = jwt.verify(token, secret)
-			let hasRole = false
-			if (admin == roles) {
+
+			if (admin == true) {
 				next()
 			} else {
 				return res.status(403).json({ message: 'У вас нет доступа' })
